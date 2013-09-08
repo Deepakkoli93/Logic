@@ -16,6 +16,8 @@ module type ORDERED_TYPER =
       val maket: t -> t
       val maker: t -> r
       
+      val makeinv: r -> r
+      
     end;;
 
 module Set =
@@ -107,6 +109,8 @@ module OrderedInteger =
       type r = (int*int)
       let maket x = x
       let maker x = (x,x)
+      
+      let makeinv (x,y) = (y,x)
       let compare x y = if x = y then Equal else if x < y then Less else Greater
       let comparer x y = if x = y then Equal else if x < y then Less else Greater
     end;;
@@ -146,7 +150,7 @@ module Relation =
  (* inverse is not ordered *)
   let rec inverse x = match x with
                        [] -> []
-                      |(a,b)::tl -> (b,a)::(inverse tl)
+                      |hd::tl -> (Elt.makeinv(hd))::(inverse tl)
 
    let rec add x s =
           match s with
@@ -186,6 +190,7 @@ module Relation =
 
 
   let rec refclosure v e = union (identity v) e 
+  let rec symclosure e = union (inverse e) e
 
  
 
@@ -217,7 +222,43 @@ module Relation =
 
 end;;
 
-module R = Relation(OrderedInteger);;
+open Array;;
+let transitiveclosure graph reach v=
+ for i=0 to v do
+  for j=0 to v do
+    reach.(i).(j) <- graph.(i).(j)
+  done;
+ done;
+
+ for k=0 to v do
+  for i=0 to v do
+   for j=0 to v do
+    reach.(i).(j) <- reach.(i).(j) or (reach.(i).(k) & reach.(k).(j))
+   done;
+  done;
+ done;;
+
+
+let graph = Array.make_matrix 4 4 10;;
+(*graph=[|[|1,1,0,1|];[|0,1,1,0|];[|0,0,1,1|];[|0,0,0,1|80]|];;*)
+(*for i=0 to 3 do
+  for j=0 to 3 do
+   graph.(i).(j) <- 0
+ done;
+done;;*)
+let graph=[|[|true;true;false;true|];[|false;true;true;false|];[|false;false;true;true|];[|false;false;false;true|]|];;
+let reach = Array.make_matrix 4 4 false;;
+transitiveclosure graph reach 3;;
+
+let rec printtc a v c= 
+  for i=0 to v do
+   for j=0 to v do 
+    if (a.(i).(j) == true ) then c := (i,j)::!c
+  done;
+done;;
+
+
+(*module R = Relation(OrderedInteger);;
 let r1 = [(1,2);(2,3);(3,1)];;
 let r2 = [(1,2);(2,3);(3,1);(2,5)];;
 R.identity [1;2;3];;
@@ -225,4 +266,5 @@ R.composition r1 r2;;
 R.union r1 r2;;
 R.intersect r1 r2;;
 R.refclosure [1;2;3] r1;;
+R.symclosure r1;;*)
 
