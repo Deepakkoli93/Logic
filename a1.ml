@@ -15,7 +15,9 @@ module type ORDERED_TYPER =
       val comparer: r -> r -> comparison
       val maket: t -> t
       val maker: t -> r
-      
+      val maker_inorder: (int*int) -> r 
+      val makeintint: r -> (int*int)
+      val makeint: t -> int 
       val makeinv: r -> r
       
     end;;
@@ -109,8 +111,10 @@ module OrderedInteger =
       type r = (int*int)
       let maket x = x
       let maker x = (x,x)
-      
+      let maker_inorder (x,y) = (x,y)
       let makeinv (x,y) = (y,x)
+      let makeintint (x,y) = (x,y)
+      let makeint x = x
       let compare x y = if x = y then Equal else if x < y then Less else Greater
       let comparer x y = if x = y then Equal else if x < y then Less else Greater
     end;;
@@ -218,12 +222,20 @@ module Relation =
                              |hd::tl -> (List.hd(hd)::(helpcomp (List.tl(hd)) f2))::(composition tl f2)*)
 
  
+let rec convert c_transclos = match c_transclos with 
+                                     [] -> []
+                                     |hd::tl -> Elt.maker_inorder(hd)::convert(tl)
 
-
-end;;
+let rec printtc a v c= 
+  for i=0 to v do
+   for j=0 to v do 
+    if (a.(i).(j) == true ) then c := (i,j)::!c
+  done;
+done;
+ convert !c 
 
 open Array;;
-let transitiveclosure graph reach v=
+let transitiveclosure graph reach v c_transclos=
  for i=0 to v do
   for j=0 to v do
     reach.(i).(j) <- graph.(i).(j)
@@ -236,8 +248,27 @@ let transitiveclosure graph reach v=
     reach.(i).(j) <- reach.(i).(j) or (reach.(i).(k) & reach.(k).(j))
    done;
   done;
- done;;
+ done;
+ 
+ printtc reach v c_transclos 
 
+
+ (*let transcloc graph reach v c_transclos = 
+  transitiveclosure graph reach v c_transclos and  *)
+(*let transclos graph reach c c_transclos = transitiveclosure graph reach v c_transclos 
+                                            convert !c_transclos*)
+
+
+let rec makearr l graph reach v c_transclos= (match l with
+                      [] -> transitiveclosure graph reach v c_transclos
+                     |(a,b)::tl -> graph.(a).(b) <- true;makearr tl graph reach v c_transclos)
+
+let reftransclos v e graph reach c_transclos= makearr (List.map Elt.makeintint (refclosure v e)) graph reach c_transclos
+
+let eqclos v e graph reach c_transclos = let l = (List.map Elt.makeintint (symclosure (refclosure v e)) )
+                                          in makearr l graph reach (List.length v) c_transclos
+
+end;;
 
 let graph = Array.make_matrix 4 4 10;;
 (*graph=[|[|1,1,0,1|];[|0,1,1,0|];[|0,0,1,1|];[|0,0,0,1|80]|];;*)
@@ -248,18 +279,14 @@ let graph = Array.make_matrix 4 4 10;;
 done;;*)
 let graph=[|[|true;true;false;true|];[|false;true;true;false|];[|false;false;true;true|];[|false;false;false;true|]|];;
 let reach = Array.make_matrix 4 4 false;;
-transitiveclosure graph reach 3;;
-
-let rec printtc a v c= 
-  for i=0 to v do
-   for j=0 to v do 
-    if (a.(i).(j) == true ) then c := (i,j)::!c
-  done;
-done;;
+(*transitiveclosure graph reach 3;;*)
 
 
-(*module R = Relation(OrderedInteger);;
-let r1 = [(1,2);(2,3);(3,1)];;
+let c_transclos=ref [];;
+
+module R = Relation(OrderedInteger);;
+R.transitiveclosure graph reach 3 c_transclos;;
+(*let r1 = [(1,2);(2,3);(3,1)];;
 let r2 = [(1,2);(2,3);(3,1);(2,5)];;
 R.identity [1;2;3];;
 R.composition r1 r2;;
