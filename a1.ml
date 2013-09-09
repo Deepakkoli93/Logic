@@ -95,7 +95,9 @@ module Set =
                         [] -> []
                        |a::b -> List.concat (List.map (fun e -> List.map (fun e' -> (e,e')) y) x))
      
-         (*let power x = (let subsets xs = (List.fold_right (fun x rest -> rest @ List.map (fun ys -> x::ys) rest) xs [[]]))*)
+let power xs = List.fold_right (fun x rest -> rest @ List.map (fun ys -> x::ys) rest) xs [[]]
+     
+
      end;;
 
 
